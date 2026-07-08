@@ -1,0 +1,6 @@
+# Backup archives
+*.tgz
+*.tar.gz
+*.zip
+*.jar
+*.bak

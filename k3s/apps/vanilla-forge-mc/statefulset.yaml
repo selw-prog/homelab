@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: vanilla-paper-server
+  namespace: minecraft
+  labels:
+    app: vanilla-paper-server
+spec:
+  serviceName: vanilla-paper-service
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vanilla-paper-server
+  template:
+    metadata:
+      labels:
+        app: vanilla-paper-server
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "19565"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+        - name: minecraft
+          image: itzg/minecraft-server:latest
+          imagePullPolicy: IfNotPresent
+          stdin: true
+          tty: true
+          env:
+            - name: EULA
+              value: "TRUE"
+            - name: TYPE
+              value: "PAPER"
+            - name: VERSION
+              value: "LATEST"
+            - name: ONLINE_MODE
+              value: "TRUE"
+            - name: MEMORY
+              value: "4G"
+            
+            # Built-in JMX Exporter setup (Java 25 compatible)
+            - name: ENABLE_JMX_EXPORTER
+              value: "TRUE"
+            - name: JMX_EXPORTER_PORT
+              value: "19565"
+            - name: JMX_EXPORTER_CONFIG_CONTENT
+              value: "{}"
+            
+            # Performance & Flavor
+            - name: USE_AIKAR_FLAGS
+              value: "TRUE"
+            - name: MOTD
+              value: "Welcome to High-Performance Paper Vanilla!"
+            - name: DIFFICULTY
+              value: "normal"
+          ports:
+            - containerPort: 25565
+              name: minecraft
+            - containerPort: 19565
+              name: metrics
+          resources:
+            requests:
+              memory: "4Gi"
+              cpu: "1000m"
+            limits:
+              memory: "5.5Gi"
+              cpu: "3000m"
+          volumeMounts:
+            - name: vanilla-data
+              mountPath: /data
+      volumes:
+        - name: vanilla-data
+          persistentVolumeClaim:
+            claimName: vanilla-paper-pvc

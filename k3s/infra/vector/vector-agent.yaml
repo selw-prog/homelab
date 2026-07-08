@@ -1,0 +1,120 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vector-config
+  namespace: monitoring
+data:
+  vector.yaml: |
+    sources:
+      kubernetes_logs:
+        type: "kubernetes_logs"
+      crucial_mc_metrics:
+        type: "prometheus_scrape"
+        endpoints: 
+          - "http://crucial-service.minecraft.svc.cluster.local:19565/metrics"
+        scrape_interval_secs: 15
+        scrape_timeout_secs: 10
+        host_metrics: false
+        instance_tag: "server_name"
+        endpoint_tag: "crucial-server"
+      vanilla_mc_metrics:
+        type: "prometheus_scrape"
+        endpoints: 
+          - "http://vanilla-paper-service.minecraft.svc.cluster.local:19566/metrics"
+        scrape_interval_secs: 15
+        scrape_timeout_secs: 10
+        host_metrics: false
+        instance_tag: "server_name"
+        endpoint_tag: "vanilla-paper-server"
+
+    transforms:
+      sanitize_logs:
+        type: "remap"
+        inputs: ["kubernetes_logs"]
+        source: |
+          pod_app = get(., ["kubernetes", "pod_labels", "app"]) ?? null
+          container_name = get(., ["kubernetes", "container_name"]) ?? null
+          pod_name = get(., ["kubernetes", "pod_name"]) ?? null
+          namespace = get(., ["kubernetes", "pod_namespace"]) ?? null
+
+          .app = string(pod_app) ?? string(container_name) ?? "unknown"
+          .pod_name = string(pod_name) ?? "unknown"
+          .namespace = string(namespace) ?? "unknown"
+          .container = string(container_name) ?? "unknown"
+          
+          .app = replace(.app, r'[^a-zA-Z0-9_.-]', "_")
+          .pod_name = replace(.pod_name, r'[^a-zA-Z0-9_.-]', "_")
+
+    sinks:
+      vm_logs:
+        type: "loki"
+        inputs: ["sanitize_logs"]
+        endpoint: "http://victoria-logs.monitoring.svc.cluster.local:9428/insert"
+        out_of_order_action: accept
+        healthcheck:
+          enabled: false  
+        labels:
+          app: "{{app}}"
+          pod_name: "{{pod_name}}"
+          namespace: "{{namespace}}"
+          container: "{{container}}"
+        encoding:
+          codec: "text"
+      vm_metrics:
+        type: "prometheus_remote_write"
+        inputs: ["crucial_mc_metrics", "vanilla_mc_metrics"]
+        endpoint: "http://victoria-metrics.monitoring.svc.cluster.local:8428/api/v1/write"
+        healthcheck:
+          enabled: false
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: vector
+  namespace: monitoring
+spec:
+  selector:
+    matchLabels:
+      app: vector
+  template:
+    metadata:
+      labels:
+        app: vector
+    spec:
+      serviceAccountName: vector-agent
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      securityContext:
+        runAsUser: 0
+        runAsGroup: 0
+      containers:
+        - name: vector
+          image: timberio/vector:0.38.0-debian
+          args: ["--config", "/etc/vector/vector.yaml"]
+          env:
+            - name: VECTOR_SELF_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: K3S_HOST_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+          volumeMounts:
+            - name: config
+              mountPath: /etc/vector
+            - name: varlog
+              mountPath: /var/log
+            - name: varlogpods
+              mountPath: /var/log/pods
+              readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: vector-config
+        - name: varlog
+          hostPath:
+            path: /var/log
+        - name: varlogpods
+          hostPath:
+            path: /var/log/pods

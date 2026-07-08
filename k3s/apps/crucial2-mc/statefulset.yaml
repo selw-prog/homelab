@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: crucial-server
+  namespace: minecraft
+  labels:
+    app: crucial-server
+spec:
+  serviceName: crucial-service
+  replicas: 1
+  selector:
+    matchLabels:
+      app: crucial-server
+  template:
+    metadata:
+      labels:
+        app: crucial-server
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "19565"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+        - name: minecraft
+          image: itzg/minecraft-server:java11
+          imagePullPolicy: IfNotPresent
+          stdin: true
+          tty: true
+          env:
+            - name: EULA
+              value: "TRUE"
+            - name: TYPE
+              value: "AUTO_CURSEFORGE"
+            - name: CF_SLUG
+              value: "crucial-2"
+            - name: VERSION
+              value: "1.16.5"
+            - name: FORGE_VERSION
+              value: "36.2.39"
+            - name: MEMORY
+              value: "5G"
+            # JVM_XX_OPTS configured for Java 11 + JMX Agent
+            - name: JVM_XX_OPTS
+              value: "-XX:+UseG1GC -XX:+ParallelRefProcEnabled -XX:MaxGCPauseMillis=200 -XX:+UnlockExperimentalVMOptions -XX:+DisableExplicitGC -XX:+AlwaysPreTouch -XX:G1NewSizePercent=30 -XX:G1MaxNewSizePercent=40 -XX:G1ReservePercent=20 -XX:G1HeapRegionSize=8m -XX:G1HeapWastePercent=5 -XX:G1MixedGCCountTarget=4 -XX:InitiatingHeapOccupancyPercent=15 -javaagent:/jmx/jmx_prometheus_javaagent-1.5.0.jar=19565:/jmx/config.yaml"
+            - name: MOTD
+              value: "Welcome to Crucial 2 Vanilla+!"
+            - name: DIFFICULTY
+              value: "normal"
+          ports:
+            - containerPort: 25565
+              name: minecraft
+            - containerPort: 19565
+              name: metrics
+          resources:
+            requests:
+              memory: "5Gi"
+              cpu: "500m"
+            limits:
+              memory: "6.5Gi"
+              cpu: "3000m"
+          volumeMounts:
+            - name: crucial-data
+              mountPath: /data
+            # Mount the directory containing the JMX .jar and config.yaml
+            - name: jmx-config
+              mountPath: /jmx
+      volumes:
+        - name: crucial-data
+          persistentVolumeClaim:
+            claimName: crucial-data-pvc
+        # HostPath mapping for your local JMX folder
+        - name: jmx-config
+          hostPath:
+            path: /srv/k3s/apps/crucial2-mc/jmx

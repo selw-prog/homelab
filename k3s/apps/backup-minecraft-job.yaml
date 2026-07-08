@@ -1,0 +1,60 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: minecraft-backup-cron
+  namespace: minecraft
+spec:
+  # Run every night at 2:30 AM
+  schedule: "30 2 * * *"
+  # If the previous night's backup is somehow still running, don't start a new one
+  concurrencyPolicy: Forbid
+  # Keep track of the last 3 successful runs and 2 failed runs for troubleshooting
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 2
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          volumes:
+            - name: crucial-vol
+              persistentVolumeClaim:
+                claimName: crucial-data-pvc
+            - name: vanilla-paper-vol
+              persistentVolumeClaim:
+                claimName: vanilla-paper-pvc
+            - name: rclone-config
+              hostPath:
+                path: /home/sean/.config/rclone
+          containers:
+            - name: backup-worker
+              image: rclone/rclone:latest
+              command: ["/bin/sh", "-c"]
+              args:
+                - |
+                  # Create archive directory
+                  mkdir -p /tmp/backups
+                  TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+                  
+                  # Archive Crucial
+                  echo "Archiving Crucial..."
+                  tar -czf /tmp/backups/crucial_$TIMESTAMP.tar.gz -C /data/crucial-vol .
+                  rclone --config /etc/rclone/rclone.conf copy /tmp/backups/crucial_$TIMESTAMP.tar.gz gdrive:MinecraftBackups
+                  
+                  # Archive Vanilla Paper
+                  echo "Archiving Vanilla Paper..."
+                  tar -czf /tmp/backups/vanilla-paper_$TIMESTAMP.tar.gz -C /data/vanilla-paper-vol .
+                  rclone --config /etc/rclone/rclone.conf copy /tmp/backups/vanilla-paper_$TIMESTAMP.tar.gz gdrive:MinecraftBackups
+                  
+                  # Retention cleanup (Deletes anything older than 2 days)
+                  echo "Cleaning up backups older than 2 days from Google Drive..."
+                  rclone --config /etc/rclone/rclone.conf delete gdrive:MinecraftBackups --min-age 2d --rmdirs
+                  
+                  echo "Backup process complete!"
+              volumeMounts:
+                - name: crucial-vol 
+                  mountPath: /data/crucial-vol
+                - name: vanilla-paper-vol
+                  mountPath: /data/vanilla-paper-vol
+                - name: rclone-config
+                  mountPath: /etc/rclone
+          restartPolicy: OnFailure
