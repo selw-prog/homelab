@@ -6,7 +6,7 @@ Personal homelab running Proxmox VE with a k3s cluster hosting Minecraft servers
 
 ## Infrastructure Diagram
 
-![Homelab Architecture](homelab-architecture_1.svg)
+![Homelab Architecture](homelab-architecture.svg)
 
 ---
 
