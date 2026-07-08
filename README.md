@@ -10,6 +10,38 @@ Personal homelab running Proxmox VE with a k3s cluster hosting Minecraft servers
 
 ---
 
+## Hardware
+
+### Hypervisor Host
+- **Chassis:** 1U — IPC-G1320M-BK
+- **Motherboard:** ASRock Rack E3C232D4U
+- **CPU:** Intel Core i7-7700K
+- **RAM:** 32GB DDR4 Non-ECC
+- **Storage:** 100% Flash
+
+### Workstations
+- **Admin:** Lenovo ThinkPad — Debian/Ubuntu
+- **Gaming:** Bazzite OS
+
+---
+
+## Network
+
+### Devices
+- **Edge Router:** MikroTik hEX (RB750Gr3) — native WireGuard VPN, DNAT to k3s node IPs
+- **Access Switch:** Cisco Catalyst WS-2960CX-8PC-L — 802.1Q trunk
+
+### VLAN Layout
+
+| VLAN | Subnet | Purpose |
+|---|---|---|
+| 10 | 192.168.10.0/24 | Management |
+| 11 | 192.168.11.0/24 | OOB / BMC |
+| 20 | 192.168.20.0/24 | Server apps (k3s nodes) |
+| 100 | 192.168.100.0/24 | WiFi (eero mesh) |
+
+---
+
 ## k3s Cluster
 
 ### Minecraft (`minecraft` namespace)
