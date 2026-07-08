@@ -1,0 +1,164 @@
+<svg viewBox="0 0 1000 900" xmlns="http://www.w3.org/2000/svg" font-family="'Segoe UI', Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#8b949e"/>
+    </marker>
+    <marker id="arrowGreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#3fb950"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect x="0" y="0" width="1000" height="900" fill="#0d1117"/>
+
+  <!-- Title -->
+  <text x="500" y="34" fill="#e6edf3" font-size="22" font-weight="600" text-anchor="middle">Homelab Infrastructure — Network &amp; Kubernetes Topology</text>
+  <text x="500" y="54" fill="#8b949e" font-size="12" text-anchor="middle">Proxmox VE · k3s · MikroTik · VLAN-Segmented Access Layer</text>
+
+  <!-- Internet cloud -->
+  <ellipse cx="500" cy="95" rx="70" ry="26" fill="#161b22" stroke="#8b949e" stroke-width="1.5"/>
+  <text x="500" y="100" fill="#e6edf3" font-size="13" text-anchor="middle">Internet / WAN</text>
+
+  <!-- Edge Router -->
+  <rect x="410" y="150" width="180" height="60" rx="6" fill="#161b22" stroke="#e6edf3" stroke-width="1.5"/>
+  <text x="500" y="174" fill="#e6edf3" font-size="14" font-weight="600" text-anchor="middle">Edge Router</text>
+  <text x="500" y="192" fill="#8b949e" font-size="11" text-anchor="middle">WireGuard VPN · Edge DNAT</text>
+  <line x1="500" y1="121" x2="500" y2="150" stroke="#8b949e" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Access Switch -->
+  <rect x="400" y="250" width="200" height="55" rx="6" fill="#161b22" stroke="#e6edf3" stroke-width="1.5"/>
+  <text x="500" y="272" fill="#e6edf3" font-size="14" font-weight="600" text-anchor="middle">Access Switch</text>
+  <text x="500" y="289" fill="#8b949e" font-size="11" text-anchor="middle">802.1Q Trunk · Managed L2</text>
+  <line x1="500" y1="210" x2="500" y2="250" stroke="#8b949e" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Branch: WiFi (VLAN 100) -->
+  <rect x="70" y="340" width="160" height="55" rx="6" fill="#161b22" stroke="#c586e8" stroke-width="1.5"/>
+  <text x="150" y="362" fill="#e6edf3" font-size="13" font-weight="600" text-anchor="middle">WiFi AP / Mesh</text>
+  <text x="150" y="379" fill="#c586e8" font-size="10" text-anchor="middle">VLAN 100 · 192.168.100.0/24</text>
+  <path d="M400,290 L150,290 L150,340" fill="none" stroke="#c586e8" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- Branch: OOB Mgmt / BMC (VLAN 11) -->
+  <rect x="780" y="340" width="160" height="55" rx="6" fill="#161b22" stroke="#ffa657" stroke-width="1.5" stroke-dasharray="5,3"/>
+  <text x="860" y="362" fill="#e6edf3" font-size="13" font-weight="600" text-anchor="middle">BMC / IPMI</text>
+  <text x="860" y="379" fill="#ffa657" font-size="10" text-anchor="middle">VLAN 11 · 192.168.11.0/24</text>
+  <path d="M600,290 L860,290 L860,340" fill="none" stroke="#ffa657" stroke-width="2" stroke-dasharray="5,3" marker-end="url(#arrow)"/>
+
+  <!-- Branch: Mgmt uplink to hypervisor (VLAN 10) -->
+  <path d="M470,305 L470,330" fill="none" stroke="#58a6ff" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="475" y="322" fill="#58a6ff" font-size="10">mgmt</text>
+
+  <!-- Branch: server-apps uplink to hypervisor (VLAN 20) -->
+  <path d="M530,305 L530,330" fill="none" stroke="#3fb950" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="536" y="322" fill="#3fb950" font-size="10">server-apps</text>
+
+  <!-- Hypervisor Host -->
+  <rect x="320" y="335" width="360" height="330" rx="8" fill="#0d1117" stroke="#8b949e" stroke-width="1.5"/>
+  <text x="340" y="358" fill="#e6edf3" font-size="13" font-weight="600">Hypervisor Host — Bare-metal Proxmox VE</text>
+  <text x="340" y="374" fill="#8b949e" font-size="10">vmbr0 (VLAN 10 mgmt) · vmbr1 (VLAN 20 server-apps)</text>
+
+  <!-- k3s cluster box -->
+  <rect x="340" y="390" width="320" height="255" rx="6" fill="#161b22" stroke="#3fb950" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <text x="500" y="410" fill="#3fb950" font-size="13" font-weight="600" text-anchor="middle">k3s Cluster (Multi-Node) — VLAN 20</text>
+
+  <!-- k3s nodes -->
+  <rect x="355" y="422" width="90" height="24" rx="4" fill="#0d1117" stroke="#3fb950" stroke-width="1"/>
+  <text x="400" y="438" fill="#c9d1d9" font-size="10" text-anchor="middle">Node 1</text>
+  <rect x="455" y="422" width="90" height="24" rx="4" fill="#0d1117" stroke="#3fb950" stroke-width="1"/>
+  <text x="500" y="438" fill="#c9d1d9" font-size="10" text-anchor="middle">Node 2</text>
+  <rect x="555" y="422" width="90" height="24" rx="4" fill="#0d1117" stroke="#3fb950" stroke-width="1"/>
+  <text x="600" y="438" fill="#c9d1d9" font-size="10" text-anchor="middle">Node N</text>
+
+  <!-- Workloads -->
+  <rect x="355" y="460" width="290" height="45" rx="5" fill="#0d1117" stroke="#c9d1d9" stroke-width="1"/>
+  <text x="500" y="478" fill="#e6edf3" font-size="12" font-weight="600" text-anchor="middle">Game Server Workloads</text>
+  <text x="500" y="493" fill="#8b949e" font-size="9.5" text-anchor="middle">StatefulSet + PVC · NodePort Service</text>
+
+  <rect x="355" y="513" width="140" height="40" rx="5" fill="#0d1117" stroke="#c9d1d9" stroke-width="1"/>
+  <text x="425" y="536" fill="#e6edf3" font-size="11" text-anchor="middle">App Workloads</text>
+
+  <rect x="505" y="513" width="140" height="40" rx="5" fill="#0d1117" stroke="#c9d1d9" stroke-width="1"/>
+  <text x="575" y="536" fill="#e6edf3" font-size="11" text-anchor="middle">Monitoring Stack</text>
+
+  <!-- PVC / storage -->
+  <rect x="355" y="565" width="290" height="34" rx="5" fill="#0d1117" stroke="#d29922" stroke-width="1"/>
+  <text x="500" y="586" fill="#d29922" font-size="11" text-anchor="middle">Persistent Volume Claims (Storage)</text>
+
+  <!-- DNAT label from edge to nodeport -->
+  <text x="500" y="612" fill="#8b949e" font-size="10" text-anchor="middle">Edge DNAT → Node IP:NodePort (no LB)</text>
+
+  <!-- Telemetry pipeline -->
+  <text x="145" y="418" fill="#e6edf3" font-size="13" font-weight="600" text-anchor="middle">Telemetry Pipeline</text>
+
+  <rect x="20" y="428" width="250" height="34" rx="5" fill="#161b22" stroke="#79c0ff" stroke-width="1.5"/>
+  <text x="145" y="449" fill="#e6edf3" font-size="11" text-anchor="middle">Vector (DaemonSet · per-node)</text>
+
+  <path d="M145,462 L80,478" fill="none" stroke="#a5d6ff" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M145,462 L210,478" fill="none" stroke="#79c0ff" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="20" y="482" width="120" height="38" rx="5" fill="#161b22" stroke="#a5d6ff" stroke-width="1.5"/>
+  <text x="80" y="500" fill="#e6edf3" font-size="10.5" text-anchor="middle">VictoriaLogs</text>
+  <text x="80" y="513" fill="#8b949e" font-size="8.5" text-anchor="middle">kubernetes_logs → loki sink</text>
+
+  <rect x="150" y="482" width="120" height="38" rx="5" fill="#161b22" stroke="#79c0ff" stroke-width="1.5"/>
+  <text x="210" y="500" fill="#e6edf3" font-size="10.5" text-anchor="middle">VictoriaMetrics</text>
+  <text x="210" y="513" fill="#8b949e" font-size="8.5" text-anchor="middle">remote_write sink</text>
+
+  <path d="M80,520 L120,545" fill="none" stroke="#a5d6ff" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <path d="M210,520 L170,545" fill="none" stroke="#79c0ff" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="20" y="549" width="250" height="42" rx="5" fill="#161b22" stroke="#c9d1d9" stroke-width="1.5"/>
+  <text x="145" y="566" fill="#e6edf3" font-size="11" font-weight="600" text-anchor="middle">Grafana</text>
+  <text x="145" y="580" fill="#8b949e" font-size="8.5" text-anchor="middle">victoriametrics-logs-datasource · Prometheus-type (PromQL vs VM)</text>
+
+  <path d="M355,470 C300,470 300,445 270,445" fill="none" stroke="#79c0ff" stroke-width="1.5" stroke-dasharray="3,3"/>
+  <text x="300" y="435" fill="#79c0ff" font-size="9" text-anchor="middle">prometheus_scrape</text>
+
+  <path d="M340,600 C295,600 295,449 270,449" fill="none" stroke="#a5d6ff" stroke-width="1.5" stroke-dasharray="3,3"/>
+  <text x="300" y="612" fill="#a5d6ff" font-size="9" text-anchor="middle">hostPath log tail</text>
+
+  <!-- Backup pipeline -->
+  <text x="800" y="450" fill="#e6edf3" font-size="13" font-weight="600" text-anchor="middle">Backup Pipeline</text>
+  <rect x="735" y="465" width="130" height="34" rx="5" fill="#161b22" stroke="#f0883e" stroke-width="1"/>
+  <text x="800" y="486" fill="#e6edf3" font-size="10.5" text-anchor="middle">CronJob (rclone)</text>
+
+  <rect x="735" y="515" width="130" height="34" rx="5" fill="#161b22" stroke="#f0883e" stroke-width="1"/>
+  <text x="800" y="536" fill="#e6edf3" font-size="11" text-anchor="middle">Compression</text>
+  <path d="M800,499 L800,515" stroke="#f0883e" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <ellipse cx="800" cy="575" rx="65" ry="22" fill="#161b22" stroke="#f0883e" stroke-width="1"/>
+  <text x="800" y="580" fill="#e6edf3" font-size="10.5" text-anchor="middle">Cloud Remote</text>
+  <path d="M800,549 L800,553" stroke="#f0883e" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <path d="M645,585 C700,585 700,482 735,482" fill="none" stroke="#f0883e" stroke-width="1.5" stroke-dasharray="3,3"/>
+  <text x="700" y="470" fill="#f0883e" font-size="9" text-anchor="middle">scheduled sync</text>
+
+  <!-- Legend -->
+  <rect x="320" y="705" width="360" height="150" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+  <text x="340" y="728" fill="#e6edf3" font-size="12" font-weight="600">Legend</text>
+
+  <line x1="340" y1="745" x2="365" y2="745" stroke="#58a6ff" stroke-width="2"/>
+  <text x="372" y="749" fill="#c9d1d9" font-size="10.5">VLAN 10 — mgmt</text>
+
+  <line x1="500" y1="745" x2="525" y2="745" stroke="#ffa657" stroke-width="2" stroke-dasharray="5,3"/>
+  <text x="532" y="749" fill="#c9d1d9" font-size="10.5">VLAN 11 — oob-mgmt (BMC)</text>
+
+  <line x1="340" y1="768" x2="365" y2="768" stroke="#3fb950" stroke-width="2"/>
+  <text x="372" y="772" fill="#c9d1d9" font-size="10.5">VLAN 20 — server-apps</text>
+
+  <line x1="500" y1="768" x2="525" y2="768" stroke="#c586e8" stroke-width="2"/>
+  <text x="532" y="772" fill="#c9d1d9" font-size="10.5">VLAN 100 — wifi</text>
+
+  <line x1="340" y1="791" x2="365" y2="791" stroke="#79c0ff" stroke-width="1.5" stroke-dasharray="3,3"/>
+  <text x="372" y="795" fill="#c9d1d9" font-size="10.5">Telemetry flow</text>
+
+  <line x1="500" y1="791" x2="525" y2="791" stroke="#f0883e" stroke-width="1.5" stroke-dasharray="3,3"/>
+  <text x="532" y="795" fill="#c9d1d9" font-size="10.5">Backup flow</text>
+
+  <rect x="340" y="805" width="18" height="12" fill="none" stroke="#3fb950" stroke-width="1" stroke-dasharray="3,2"/>
+  <text x="372" y="815" fill="#c9d1d9" font-size="10.5">Logical (k3s) boundary</text>
+
+  <rect x="340" y="828" width="18" height="12" fill="none" stroke="#d29922" stroke-width="1"/>
+  <text x="372" y="838" fill="#c9d1d9" font-size="10.5">Persistent storage</text>
+
+  <text x="500" y="880" fill="#484f58" font-size="9.5" text-anchor="middle">Diagram generalized for portfolio use — no real hostnames, IPs, or hardware models shown</text>
+</svg>
