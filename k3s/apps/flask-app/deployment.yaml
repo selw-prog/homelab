@@ -21,7 +21,7 @@ spec:
         - name: ghcr-pull-secret
       containers:
         - name: gunicorn
-          image: ghcr.io/seanrelwood/flask-app:latest
+          image: ghcr.io/selw-prog/flask-app:latest
           imagePullPolicy: Always
           command: ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "2", "app:create_app()"]
           ports:
