@@ -17,10 +17,12 @@ spec:
         prometheus.io/port: "8000"
         prometheus.io/path: "/metrics"
     spec:
+      imagePullSecrets:
+        - name: ghcr-pull-secret
       containers:
         - name: gunicorn
-          image: flask-app:latest
-          imagePullPolicy: IfNotPresent
+          image: ghcr.io/seanrelwood/flask-app:latest
+          imagePullPolicy: Always
           command: ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "2", "app:create_app()"]
           ports:
             - containerPort: 8000
