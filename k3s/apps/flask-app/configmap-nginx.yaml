@@ -8,12 +8,6 @@ data:
     server {
       listen 80;
 
-      location /static/ {
-        alias /app/app/static/;
-        expires 30d;
-        add_header Cache-Control "public, no-transform";
-      }
-
       location / {
         proxy_pass         http://localhost:8000;
         proxy_set_header   Host              $host;
