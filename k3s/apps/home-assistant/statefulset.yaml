@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: home-assistant
+  namespace: web
+  labels:
+    app: home-assistant
+spec:
+  serviceName: home-assistant-service
+  replicas: 1
+  selector:
+    matchLabels:
+      app: home-assistant
+  template:
+    metadata:
+      labels:
+        app: home-assistant
+      annotations:
+        # HA's built-in Prometheus integration (configuration.yaml: `prometheus:`)
+        # serves metrics at this path but requires a Bearer token on the request.
+        # Vector's prometheus_scrape source needs `auth.strategy: bearer` pointed
+        # at a long-lived access token stored as a Secret before this is scrapable.
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8123"
+        prometheus.io/path: "/api/prometheus"
+    spec:
+      containers:
+        - name: home-assistant
+          image: ghcr.io/home-assistant/home-assistant:stable
+          imagePullPolicy: IfNotPresent
+          env:
+            # TODO: set to your actual tz (e.g. "America/Chicago") — HA uses this
+            # for automations/history timestamps.
+            - name: TZ
+              value: "America/Chicago"
+          ports:
+            - containerPort: 8123
+              name: http
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "2000m"
+              memory: "1.5Gi"
+          volumeMounts:
+            - name: home-assistant-config
+              mountPath: /config
+          # Onboarding/login page serves on "/" pre-auth, so probes don't need
+          # a token the way /api or /api/prometheus would.
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8123
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8123
+            initialDelaySeconds: 60
+            periodSeconds: 30
+      volumes:
+        - name: home-assistant-config
+          persistentVolumeClaim:
+            claimName: home-assistant-config-pvc
