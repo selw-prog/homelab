@@ -6,5 +6,5 @@
 *.bak
 
 # Kubernetes secrets — apply manually, never commit
-k3s/apps/**/secret.yaml
-k3s/apps/**/secret-*.yaml
+secret.yaml
+secret-*.yaml

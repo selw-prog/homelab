@@ -1,0 +1,153 @@
+# Proxmox MCP server — proxmox-mcp-server (stdio) fronted by supergateway (Streamable HTTP).
+# Endpoint: http://<k3s-node-ip>:30081/mcp   (no inbound auth — restrict at the hEX, never DNAT)
+#
+# Prereq — proxmox-mcp-secret from secret.yaml (gitignored; apply manually).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: proxmox-mcp
+  namespace: mcp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: proxmox-mcp
+  template:
+    metadata:
+      labels:
+        app: proxmox-mcp
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        # Installs the pinned server into a shared emptyDir; PyPI failures surface as Init:Error.
+        - name: install-server
+          image: supercorp/supergateway:4.1.0-uvx@sha256:660c97d4ee58498f4654e1dc60682f4f4ccab363025c9b8b415d04b4e823025e
+          command: ["uv", "tool", "install", "--python", "/usr/bin/python3", "proxmox-mcp-server==1.4.2"]
+          env:
+            - name: HOME
+              value: /tmp
+            - name: UV_TOOL_DIR
+              value: /opt/mcp/tools
+            - name: UV_TOOL_BIN_DIR
+              value: /opt/mcp/bin
+            - name: UV_NO_CACHE
+              value: "1"
+            - name: UV_LINK_MODE
+              value: copy
+            - name: UV_PYTHON_DOWNLOADS
+              value: never
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "128Mi"
+            limits:
+              cpu: "1"
+              memory: "512Mi"
+          volumeMounts:
+            - mountPath: /opt/mcp
+              name: server
+            - mountPath: /tmp
+              name: tmp
+      containers:
+        - name: proxmox-mcp
+          image: supercorp/supergateway:4.1.0-uvx@sha256:660c97d4ee58498f4654e1dc60682f4f4ccab363025c9b8b415d04b4e823025e
+          args:
+            - --stdio
+            - /opt/mcp/bin/proxmox-mcp-server
+            - --outputTransport
+            - streamableHttp
+            - --stateful
+            - --sessionTimeout
+            - "600000"
+            - --port
+            - "8000"
+            - --healthEndpoint
+            - /healthz
+          ports:
+            - containerPort: 8000
+              name: http
+          envFrom:
+            - secretRef:
+                name: proxmox-mcp-secret
+          env:
+            - name: HOME
+              value: /tmp
+            - name: PROXMOX_HOST
+              value: "192.168.10.4"
+            - name: PROXMOX_PORT
+              value: "8006"
+            # PVE ships a self-signed cert; set to "1" once the node has a trusted one.
+            - name: PROXMOX_VERIFY_SSL
+              value: "0"
+            - name: PROXMOX_TIMEOUT
+              value: "30"
+            # Blocks every non-GET PVE API call. Flip only with a broader token role and a locked-down NodePort.
+            - name: PROXMOX_READ_ONLY
+              value: "true"
+            - name: PROXMOX_DISABLE_RAW_API
+              value: "true"
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "192Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          volumeMounts:
+            - mountPath: /opt/mcp
+              name: server
+              readOnly: true
+            - mountPath: /tmp
+              name: tmp
+      volumes:
+        - name: server
+          emptyDir:
+            sizeLimit: 256Mi
+        - name: tmp
+          emptyDir:
+            sizeLimit: 64Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: proxmox-mcp
+  namespace: mcp
+spec:
+  type: NodePort
+  ports:
+    - port: 8000
+      targetPort: 8000
+      nodePort: 30081
+      protocol: TCP
+      name: http
+  selector:
+    app: proxmox-mcp
