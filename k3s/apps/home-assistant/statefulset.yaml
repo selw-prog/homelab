@@ -15,14 +15,6 @@ spec:
     metadata:
       labels:
         app: home-assistant
-      annotations:
-        # HA's built-in Prometheus integration (configuration.yaml: `prometheus:`)
-        # serves metrics at this path but requires a Bearer token on the request.
-        # Vector's prometheus_scrape source needs `auth.strategy: bearer` pointed
-        # at a long-lived access token stored as a Secret before this is scrapable.
-        prometheus.io/scrape: "true"
-        prometheus.io/port: "8123"
-        prometheus.io/path: "/api/prometheus"
     spec:
       containers:
         - name: home-assistant
