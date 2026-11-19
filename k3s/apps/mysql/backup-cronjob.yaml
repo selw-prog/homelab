@@ -1,0 +1,70 @@
+# Nightly logical backup of the website database to Google Drive.
+#   dump:   mysqldump --all-databases (app DB + tornado_events), consistent snapshot
+#   upload: rclone -> gdrive:WebsiteBackups/mysql, 14-day retention
+# rclone config is the node's /home/sean/.config/rclone (mounted rw so OAuth token refreshes persist).
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: mysql-backup
+  namespace: web
+spec:
+  schedule: "15 3 * * *"
+  timeZone: America/Chicago
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 2
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      ttlSecondsAfterFinished: 172800
+      template:
+        spec:
+          restartPolicy: Never
+          initContainers:
+            - name: dump
+              image: mysql:8.0
+              command: ["/bin/sh", "-c"]
+              args:
+                - |
+                  set -eu
+                  TS=$(date +%Y%m%d_%H%M%S)
+                  mysqldump -h mysql-service -u root \
+                    --all-databases --single-transaction --quick \
+                    --routines --events --triggers --set-gtid-purged=OFF \
+                    | gzip -6 > /backup/mysql_${TS}.sql.gz
+                  gzip -t /backup/mysql_${TS}.sql.gz
+                  ls -l /backup
+              env:
+                - name: MYSQL_PWD
+                  valueFrom:
+                    secretKeyRef:
+                      name: mysql-secret
+                      key: MYSQL_ROOT_PASSWORD
+              resources:
+                requests: { cpu: 50m, memory: 64Mi }
+                limits: { cpu: 500m, memory: 256Mi }
+              volumeMounts:
+                - { name: backup, mountPath: /backup }
+          containers:
+            - name: upload
+              image: rclone/rclone:1
+              command: ["/bin/sh", "-c"]
+              args:
+                - |
+                  set -eu
+                  R="rclone --config /etc/rclone/rclone.conf"
+                  $R copy /backup gdrive:WebsiteBackups/mysql
+                  $R check /backup gdrive:WebsiteBackups/mysql --one-way --size-only
+                  $R delete gdrive:WebsiteBackups/mysql --min-age 14d
+                  $R lsl gdrive:WebsiteBackups/mysql
+              resources:
+                requests: { cpu: 50m, memory: 64Mi }
+                limits: { cpu: 500m, memory: 256Mi }
+              volumeMounts:
+                - { name: backup, mountPath: /backup, readOnly: true }
+                - { name: rclone-config, mountPath: /etc/rclone }
+          volumes:
+            - name: backup
+              emptyDir: { sizeLimit: 2Gi }
+            - name: rclone-config
+              hostPath: { path: /home/sean/.config/rclone, type: Directory }

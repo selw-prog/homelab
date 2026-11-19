@@ -1,7 +1,10 @@
 # Proxmox MCP server — proxmox-mcp-server (stdio) fronted by supergateway (Streamable HTTP).
 # Endpoint: http://<k3s-node-ip>:30081/mcp   (no inbound auth — restrict at the hEX, never DNAT)
 #
-# Prereq — proxmox-mcp-secret from secret.yaml (gitignored; apply manually).
+# Prereq — Secret proxmox-mcp-creds (gitignored; apply manually) with keys:
+#   PROXMOX_HOST, PROXMOX_USER, PROXMOX_TOKEN_NAME, PROXMOX_TOKEN_VALUE
+# Token claude@pve!mcp: privsep, PVEAdmin on / for BOTH the user and the token.
+# MikroTik must allow 10.10.110.10 -> 10.10.200.4:8006.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -78,14 +81,17 @@ spec:
           ports:
             - containerPort: 8000
               name: http
-          envFrom:
-            - secretRef:
-                name: proxmox-mcp-secret
           env:
             - name: HOME
               value: /tmp
             - name: PROXMOX_HOST
-              value: "192.168.10.4"
+              valueFrom: { secretKeyRef: { name: proxmox-mcp-creds, key: PROXMOX_HOST } }
+            - name: PROXMOX_USER
+              valueFrom: { secretKeyRef: { name: proxmox-mcp-creds, key: PROXMOX_USER } }
+            - name: PROXMOX_TOKEN_NAME
+              valueFrom: { secretKeyRef: { name: proxmox-mcp-creds, key: PROXMOX_TOKEN_NAME } }
+            - name: PROXMOX_TOKEN_VALUE
+              valueFrom: { secretKeyRef: { name: proxmox-mcp-creds, key: PROXMOX_TOKEN_VALUE } }
             - name: PROXMOX_PORT
               value: "8006"
             # PVE ships a self-signed cert; set to "1" once the node has a trusted one.
@@ -93,11 +99,12 @@ spec:
               value: "0"
             - name: PROXMOX_TIMEOUT
               value: "30"
-            # Blocks every non-GET PVE API call. Flip only with a broader token role and a locked-down NodePort.
+            # Write access enabled 2026-11-19 for Claude-managed lab ops. NodePort is the only gate:
+            # keep the hEX rule limiting 30081 to the admin workstation.
             - name: PROXMOX_READ_ONLY
-              value: "true"
+              value: "false"
             - name: PROXMOX_DISABLE_RAW_API
-              value: "true"
+              value: "false"
           readinessProbe:
             httpGet:
               path: /healthz

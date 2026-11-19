@@ -13,7 +13,7 @@
 
   <!-- Title -->
   <text x="500" y="34" fill="#e6edf3" font-size="22" font-weight="600" text-anchor="middle">Homelab Infrastructure — Network &amp; Kubernetes Topology</text>
-  <text x="500" y="54" fill="#8b949e" font-size="12" text-anchor="middle">Proxmox VE · k3s · MikroTik · VLAN-Segmented Access Layer</text>
+  <text x="500" y="54" fill="#8b949e" font-size="12" text-anchor="middle">Proxmox VE · k3s · MikroTik · VLAN-Segmented Access Layer · Cloudflare Tunnel</text>
 
   <!-- Internet cloud -->
   <ellipse cx="500" cy="95" rx="70" ry="26" fill="#161b22" stroke="#8b949e" stroke-width="1.5"/>
@@ -61,31 +61,27 @@
   <!-- Hypervisor Host -->
   <rect x="320" y="335" width="360" height="330" rx="8" fill="#0d1117" stroke="#8b949e" stroke-width="1.5"/>
   <text x="340" y="358" fill="#e6edf3" font-size="13" font-weight="600">Hypervisor Host — Bare-metal Proxmox VE</text>
-  <text x="340" y="374" fill="#8b949e" font-size="9">vmbr0 (VLAN 200 mgmt) · vmbr1 trunk (VLAN 110 apps, VLAN 120 ai-k3s)</text>
+  <text x="340" y="374" fill="#8b949e" font-size="9">vmbr0 (VLAN 200 mgmt) · vmbr1 trunk (VLAN 110 apps, VLAN 120 reserved)</text>
 
   <!-- k3s cluster box -->
   <rect x="340" y="390" width="320" height="220" rx="6" fill="#161b22" stroke="#3fb950" stroke-width="1.5" stroke-dasharray="4,3"/>
-  <text x="500" y="408" fill="#3fb950" font-size="11.5" font-weight="600" text-anchor="middle">k3s Cluster (Multi-Node) — VLAN 110</text>
-  <text x="500" y="421" fill="#3fb950" font-size="9" text-anchor="middle">10.10.110.0/24 · Gi0/6 trunk</text>
+  <text x="500" y="408" fill="#3fb950" font-size="11.5" font-weight="600" text-anchor="middle">k3s (single node · VM 100 · 2 vCPU / 6 GB) — VLAN 110</text>
+  <text x="500" y="421" fill="#3fb950" font-size="9" text-anchor="middle">10.10.110.10 · Gi0/6 trunk · Traefik disabled</text>
 
   <!-- k3s nodes -->
-  <rect x="355" y="431" width="90" height="24" rx="4" fill="#0d1117" stroke="#3fb950" stroke-width="1"/>
-  <text x="400" y="447" fill="#c9d1d9" font-size="10" text-anchor="middle">Node 1</text>
-  <rect x="455" y="431" width="90" height="24" rx="4" fill="#0d1117" stroke="#3fb950" stroke-width="1"/>
-  <text x="500" y="447" fill="#c9d1d9" font-size="10" text-anchor="middle">Node 2</text>
-  <rect x="555" y="431" width="90" height="24" rx="4" fill="#0d1117" stroke="#3fb950" stroke-width="1"/>
-  <text x="600" y="447" fill="#c9d1d9" font-size="10" text-anchor="middle">Node N</text>
+  <rect x="355" y="431" width="290" height="24" rx="4" fill="#0d1117" stroke="#3fb950" stroke-width="1"/>
+  <text x="500" y="447" fill="#c9d1d9" font-size="10" text-anchor="middle">k3s node · 10.10.110.10</text>
 
   <!-- Workloads -->
   <rect x="355" y="467" width="290" height="45" rx="5" fill="#0d1117" stroke="#c9d1d9" stroke-width="1"/>
-  <text x="500" y="485" fill="#e6edf3" font-size="12" font-weight="600" text-anchor="middle">Game Server Workloads</text>
-  <text x="500" y="500" fill="#8b949e" font-size="9.5" text-anchor="middle">StatefulSet + PVC · NodePort Service</text>
+  <text x="500" y="485" fill="#e6edf3" font-size="11" font-weight="600" text-anchor="middle">Website — flask-app (gunicorn + nginx) · MySQL</text>
+  <text x="500" y="500" fill="#8b949e" font-size="9.5" text-anchor="middle">Deployment + StatefulSet/PVC · ClusterIP · cloudflared</text>
 
   <rect x="355" y="520" width="140" height="40" rx="5" fill="#0d1117" stroke="#c9d1d9" stroke-width="1"/>
-  <text x="425" y="543" fill="#e6edf3" font-size="11" text-anchor="middle">App Workloads</text>
+  <text x="425" y="543" fill="#e6edf3" font-size="11" text-anchor="middle">Home Assistant</text>
 
   <rect x="505" y="520" width="140" height="40" rx="5" fill="#0d1117" stroke="#c9d1d9" stroke-width="1"/>
-  <text x="575" y="543" fill="#e6edf3" font-size="11" text-anchor="middle">Monitoring Stack</text>
+  <text x="575" y="543" fill="#e6edf3" font-size="11" text-anchor="middle">proxmox-mcp (:30081)</text>
 
   <!-- PVC / storage -->
   <rect x="355" y="568" width="290" height="32" rx="5" fill="#0d1117" stroke="#d29922" stroke-width="1"/>
@@ -93,56 +89,34 @@
 
   <!-- AI/ML isolated VM (VLAN 120) -->
   <rect x="340" y="615" width="320" height="26" rx="5" fill="#0d1117" stroke="#d2a8ff" stroke-width="1"/>
-  <text x="500" y="632" fill="#e6edf3" font-size="10" text-anchor="middle">AI/ML VM — VLAN 120 · 10.10.120.0/24 (isolated, not in k3s)</text>
+  <text x="500" y="632" fill="#e6edf3" font-size="10" text-anchor="middle">VLAN 120 · 10.10.120.0/24 — reserved (k3s-ai VM removed)</text>
 
   <!-- DNAT label from edge to nodeport -->
-  <text x="500" y="655" fill="#8b949e" font-size="9.5" text-anchor="middle">Edge DNAT → Node IP:NodePort (no LB)</text>
+  <text x="500" y="655" fill="#8b949e" font-size="9.5" text-anchor="middle">Web ingress: Cloudflare Tunnel (outbound) · NodePorts admin-only via hEX</text>
 
-  <!-- Telemetry pipeline -->
-  <text x="145" y="418" fill="#e6edf3" font-size="13" font-weight="600" text-anchor="middle">Telemetry Pipeline</text>
 
-  <rect x="20" y="428" width="250" height="34" rx="5" fill="#161b22" stroke="#79c0ff" stroke-width="1.5"/>
-  <text x="145" y="449" fill="#e6edf3" font-size="11" text-anchor="middle">Vector (DaemonSet · per-node)</text>
-
-  <path d="M145,462 L80,478" fill="none" stroke="#a5d6ff" stroke-width="1.5" marker-end="url(#arrow)"/>
-  <path d="M145,462 L210,478" fill="none" stroke="#79c0ff" stroke-width="1.5" marker-end="url(#arrow)"/>
-
-  <rect x="20" y="482" width="120" height="38" rx="5" fill="#161b22" stroke="#a5d6ff" stroke-width="1.5"/>
-  <text x="80" y="500" fill="#e6edf3" font-size="10.5" text-anchor="middle">VictoriaLogs</text>
-  <text x="80" y="513" fill="#8b949e" font-size="8.5" text-anchor="middle">kubernetes_logs → loki sink</text>
-
-  <rect x="150" y="482" width="120" height="38" rx="5" fill="#161b22" stroke="#79c0ff" stroke-width="1.5"/>
-  <text x="210" y="500" fill="#e6edf3" font-size="10.5" text-anchor="middle">VictoriaMetrics</text>
-  <text x="210" y="513" fill="#8b949e" font-size="8.5" text-anchor="middle">remote_write sink</text>
-
-  <path d="M80,520 L120,545" fill="none" stroke="#a5d6ff" stroke-width="1.5" marker-end="url(#arrow)"/>
-  <path d="M210,520 L170,545" fill="none" stroke="#79c0ff" stroke-width="1.5" marker-end="url(#arrow)"/>
-
-  <rect x="20" y="549" width="250" height="42" rx="5" fill="#161b22" stroke="#c9d1d9" stroke-width="1.5"/>
-  <text x="145" y="566" fill="#e6edf3" font-size="11" font-weight="600" text-anchor="middle">Grafana</text>
-  <text x="145" y="580" fill="#8b949e" font-size="8.5" text-anchor="middle">victoriametrics-logs-datasource · Prometheus-type (PromQL vs VM)</text>
-
-  <path d="M355,477 C300,477 300,445 270,445" fill="none" stroke="#79c0ff" stroke-width="1.5" stroke-dasharray="3,3"/>
-  <text x="300" y="435" fill="#79c0ff" font-size="9" text-anchor="middle">prometheus_scrape</text>
-
-  <path d="M340,601 C295,601 295,449 270,449" fill="none" stroke="#a5d6ff" stroke-width="1.5" stroke-dasharray="3,3"/>
-  <text x="300" y="613" fill="#a5d6ff" font-size="9" text-anchor="middle">hostPath log tail</text>
+  <!-- Cloudflare Tunnel -->
+  <text x="145" y="450" fill="#e6edf3" font-size="13" font-weight="600" text-anchor="middle">Public Ingress</text>
+  <rect x="25" y="465" width="230" height="34" rx="5" fill="#161b22" stroke="#f38020" stroke-width="1.5"/>
+  <text x="145" y="486" fill="#e6edf3" font-size="10.5" text-anchor="middle">Cloudflare Edge · www.seanelwood.me</text>
+  <path d="M255,482 C300,482 300,490 355,490" fill="none" stroke="#f38020" stroke-width="1.5" stroke-dasharray="3,3" marker-end="url(#arrow)"/>
+  <text x="300" y="474" fill="#f38020" font-size="9" text-anchor="middle">tunnel</text>
 
   <!-- Backup pipeline -->
-  <text x="800" y="450" fill="#e6edf3" font-size="13" font-weight="600" text-anchor="middle">Backup Pipeline</text>
+  <text x="800" y="450" fill="#e6edf3" font-size="13" font-weight="600" text-anchor="middle">Backup Pipeline (nightly)</text>
   <rect x="735" y="465" width="130" height="34" rx="5" fill="#161b22" stroke="#f0883e" stroke-width="1"/>
-  <text x="800" y="486" fill="#e6edf3" font-size="10.5" text-anchor="middle">CronJob (rclone)</text>
+  <text x="800" y="486" fill="#e6edf3" font-size="10.5" text-anchor="middle">CronJob (mysqldump)</text>
 
   <rect x="735" y="515" width="130" height="34" rx="5" fill="#161b22" stroke="#f0883e" stroke-width="1"/>
-  <text x="800" y="536" fill="#e6edf3" font-size="11" text-anchor="middle">Compression</text>
+  <text x="800" y="536" fill="#e6edf3" font-size="11" text-anchor="middle">gzip · 14-day retention</text>
   <path d="M800,499 L800,515" stroke="#f0883e" stroke-width="1.5" marker-end="url(#arrow)"/>
 
   <ellipse cx="800" cy="575" rx="65" ry="22" fill="#161b22" stroke="#f0883e" stroke-width="1"/>
-  <text x="800" y="580" fill="#e6edf3" font-size="10.5" text-anchor="middle">Cloud Remote</text>
+  <text x="800" y="580" fill="#e6edf3" font-size="10.5" text-anchor="middle">Google Drive (rclone)</text>
   <path d="M800,549 L800,553" stroke="#f0883e" stroke-width="1.5" marker-end="url(#arrow)"/>
 
   <path d="M645,590 C700,590 700,482 735,482" fill="none" stroke="#f0883e" stroke-width="1.5" stroke-dasharray="3,3"/>
-  <text x="700" y="470" fill="#f0883e" font-size="9" text-anchor="middle">scheduled sync</text>
+  <text x="895" y="486" fill="#f0883e" font-size="9" text-anchor="middle">03:15 CT</text>
 
   <!-- Legend -->
   <rect x="300" y="705" width="400" height="165" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1"/>
@@ -161,10 +135,8 @@
   <text x="552" y="772" fill="#c9d1d9" font-size="10">VLAN 100 — wifi</text>
 
   <line x1="320" y1="791" x2="345" y2="791" stroke="#d2a8ff" stroke-width="2"/>
-  <text x="352" y="795" fill="#c9d1d9" font-size="10">VLAN 120 — ai-k3s</text>
+  <text x="352" y="795" fill="#c9d1d9" font-size="10">VLAN 120 — reserved</text>
 
-  <line x1="520" y1="791" x2="545" y2="791" stroke="#79c0ff" stroke-width="1.5" stroke-dasharray="3,3"/>
-  <text x="552" y="795" fill="#c9d1d9" font-size="10">Telemetry flow</text>
 
   <line x1="320" y1="814" x2="345" y2="814" stroke="#f0883e" stroke-width="1.5" stroke-dasharray="3,3"/>
   <text x="352" y="818" fill="#c9d1d9" font-size="10">Backup flow</text>
