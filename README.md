@@ -48,8 +48,9 @@ Personal homelab running Proxmox VE with a single-node k3s cluster that hosts my
 | VMID | Name | vCPU | RAM | Disk | Network |
 |---|---|---|---|---|---|
 | 100 | `k3s` | 2 | 6 GB (no balloon) | 200 GB thin, discard on | `vmbr1` tag 110 |
+| 110 | `mgmt` | 2 | 2 GB | 32 GB thin, discard on | `vmbr0` (VLAN 200), 10.10.200.10 |
 
-QEMU guest agent is enabled on VM 100. Restart it with PVE `reboot` (not shutdown + start) — `proxmox-mcp` runs inside this VM.
+QEMU guest agent is enabled on both VMs. MCP servers run on `mgmt` (see [`mgmt/`](mgmt/README.md)), so restarting VM 100 no longer cuts off management access.
 
 ---
 

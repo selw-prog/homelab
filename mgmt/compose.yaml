@@ -1,0 +1,72 @@
+# Management VM (VMID 110, 10.10.200.10, VLAN 200) - MCP servers behind Caddy.
+#   https://10.10.200.10/proxmox/mcp   -> proxmox-mcp (supergateway Streamable HTTP)
+# Every request needs "Authorization: Bearer $MCP_TOKEN"; TLS is Caddy's internal CA.
+# Secrets live in /opt/mgmt/.env (root:root 0600, never committed) - see .env.example.
+name: mgmt
+
+services:
+  caddy:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    ports:
+      - "443:443"
+    environment:
+      MCP_TOKEN: ${MCP_TOKEN:?MCP_TOKEN missing in .env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      proxmox-mcp:
+        condition: service_healthy
+    networks: [mcp]
+
+  proxmox-mcp:
+    image: supercorp/supergateway:4.1.0-uvx@sha256:660c97d4ee58498f4654e1dc60682f4f4ccab363025c9b8b415d04b4e823025e
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >-
+        uv tool install --python /usr/bin/python3 proxmox-mcp-server==1.4.2 &&
+        exec supergateway --stdio /opt/mcp/bin/proxmox-mcp-server
+        --outputTransport streamableHttp --stateful --sessionTimeout 600000
+        --port 8000 --healthEndpoint /healthz
+    environment:
+      HOME: /tmp
+      UV_TOOL_DIR: /opt/mcp/tools
+      UV_TOOL_BIN_DIR: /opt/mcp/bin
+      UV_NO_CACHE: "1"
+      UV_LINK_MODE: copy
+      UV_PYTHON_DOWNLOADS: never
+      PROXMOX_HOST: ${PROXMOX_HOST:?}
+      PROXMOX_USER: ${PROXMOX_USER:?}
+      PROXMOX_TOKEN_NAME: ${PROXMOX_TOKEN_NAME:?}
+      PROXMOX_TOKEN_VALUE: ${PROXMOX_TOKEN_VALUE:?}
+      PROXMOX_PORT: "8006"
+      PROXMOX_VERIFY_SSL: "0"
+      PROXMOX_TIMEOUT: "30"
+      PROXMOX_READ_ONLY: "false"
+      PROXMOX_DISABLE_RAW_API: "false"
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m
+      - /opt/mcp:size=256m,exec   # Docker tmpfs defaults to noexec; the installed server must run
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 512m
+    cpus: 1.0
+    expose: ["8000"]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8000/healthz >/dev/null 2>&1 || curl -fsS http://127.0.0.1:8000/healthz >/dev/null"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    networks: [mcp]
+
+volumes:
+  caddy_data:
+  caddy_config:
+
+networks:
+  mcp: {}
