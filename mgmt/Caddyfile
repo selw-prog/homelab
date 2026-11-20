@@ -29,6 +29,19 @@ https://10.10.200.10, https://mgmt.lab.local {
 			}
 		}
 
+		handle_path /k8s/* {
+			reverse_proxy kubernetes-mcp:8080 {
+				# kubernetes-mcp-server treats an incoming Authorization header as the
+				# caller's k8s token and passes it to the API server. Strip our MCP
+				# bearer so it falls back to the kubeconfig (SA claude-mcp) credentials.
+				header_up -Authorization
+				flush_interval -1
+				transport http {
+					read_timeout 0
+				}
+			}
+		}
+
 		respond "not found" 404
 	}
 

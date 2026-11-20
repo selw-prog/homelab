@@ -8,3 +8,7 @@
 # Kubernetes secrets — apply manually, never commit
 secret.yaml
 secret-*.yaml
+
+# mgmt VM secrets - live only in /opt/mgmt on VMID 110
+mgmt/.env
+mgmt/kubeconfig

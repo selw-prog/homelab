@@ -1,0 +1,13 @@
+# containers/kubernetes-mcp-server config (v0.1.0+ reads TOML; CLI flags removed).
+# Full read/write: Claude manages the cluster. Identity = SA kube-system/claude-mcp
+# (cluster-admin), see k3s/infra/claude-mcp-rbac.yaml.
+port = "8080"
+log_level = 2
+list_output = "table"
+
+kubeconfig = "/etc/kubernetes-mcp-server/kubeconfig"
+cluster_provider_strategy = "kubeconfig"
+
+read_only = false
+disable_destructive = false
+toolsets = ["core", "config", "helm"]
