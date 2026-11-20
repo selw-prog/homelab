@@ -7,7 +7,7 @@ Management host for MCP servers, kept outside the k3s VM so a k3s reboot or fail
 | VM | VMID 110 `mgmt`, Debian 13 cloud image, 2 vCPU / 2 GB / 32 GB on `data-vms`, guest agent, `onboot=1` |
 | Network | VLAN 200 (`vmbr0`), 10.10.200.10/24, gw 10.10.200.1 |
 | Runtime | Docker + Compose, stack in `/opt/mgmt` |
-| Endpoint | `https://10.10.200.10/proxmox/mcp` |
+| Endpoints | `https://10.10.200.10/proxmox/mcp` (proxmox-mcp), `https://10.10.200.10/k8s/mcp` (kubernetes-mcp) |
 | Auth | Bearer token (`MCP_TOKEN`) enforced by Caddy; TLS from Caddy's internal CA |
 
 ## Layout on the VM
@@ -16,9 +16,21 @@ Management host for MCP servers, kept outside the k3s VM so a k3s reboot or fail
 /opt/mgmt/
   compose.yaml   # this directory
   Caddyfile      # this directory
+  kubernetes-mcp.toml  # this directory
   .env           # secrets, root:root 0600 - see .env.example
-  selftest.sh    # auth / handshake / get_version check (never prints the token)
+  kubeconfig     # SA kube-system/claude-mcp token, 65532:65532 0400, never committed
+  selftest.sh    # proxmox: auth / handshake / get_version (never prints the token)
+  selftest-k8s.sh  # k8s: auth / handshake / tools/list / namespaces_list
 ```
+
+## Kubernetes MCP
+
+- Server: `ghcr.io/containers/kubernetes-mcp-server:v0.1.0` (digest-pinned). Config is TOML only from v0.1.0 (`kubernetes-mcp.toml`); toolsets `core,config,helm`, read/write.
+- Identity: ServiceAccount `kube-system/claude-mcp` bound to `cluster-admin` (`k3s/infra/claude-mcp-rbac.yaml`), long-lived token in `/opt/mgmt/kubeconfig`, server `https://10.10.110.10:6443`.
+- Caddy strips `Authorization` before proxying to it (`header_up -Authorization`). Without that, the server passes our MCP bearer token to the API server as a k8s credential and every call gets 401.
+- Firewall: hEX rule `mgmt -> k3s API (110)` allows 10.10.200.10 to 10.10.110.10:6443.
+- Rotate: delete Secret `kube-system/claude-mcp-token`, re-apply the RBAC file, rebuild `/opt/mgmt/kubeconfig`, `docker compose restart kubernetes-mcp`.
+- Client: same entry as proxmox-mcp with the URL ending `/k8s/mcp` (same token and CA).
 
 ## Deploy / update
 

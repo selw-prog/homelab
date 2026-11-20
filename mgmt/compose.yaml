@@ -1,5 +1,6 @@
 # Management VM (VMID 110, 10.10.200.10, VLAN 200) - MCP servers behind Caddy.
 #   https://10.10.200.10/proxmox/mcp   -> proxmox-mcp (supergateway Streamable HTTP)
+#   https://10.10.200.10/k8s/mcp       -> kubernetes-mcp (containers/kubernetes-mcp-server)
 # Every request needs "Authorization: Bearer $MCP_TOKEN"; TLS is Caddy's internal CA.
 # Secrets live in /opt/mgmt/.env (root:root 0600, never committed) - see .env.example.
 name: mgmt
@@ -19,6 +20,24 @@ services:
     depends_on:
       proxmox-mcp:
         condition: service_healthy
+      kubernetes-mcp:
+        condition: service_started
+    networks: [mcp]
+
+  kubernetes-mcp:
+    image: ghcr.io/containers/kubernetes-mcp-server:v0.1.0@sha256:eb8eb88428972ed73750436fc4258d56c3d1d55e3a19880a1f6fba6734cb1149
+    restart: unless-stopped
+    command: ["--config", "/etc/kubernetes-mcp-server/config.toml"]
+    volumes:
+      - ./kubernetes-mcp.toml:/etc/kubernetes-mcp-server/config.toml:ro
+      # SA token for kube-system/claude-mcp; owned 65532 (image user), mode 0400, never committed.
+      - ./kubeconfig:/etc/kubernetes-mcp-server/kubeconfig:ro
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 256m
+    cpus: 1.0
+    expose: ["8080"]
     networks: [mcp]
 
   proxmox-mcp:

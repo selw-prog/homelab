@@ -1,0 +1,31 @@
+# Identity used by kubernetes-mcp on the mgmt VM (VMID 110).
+# cluster-admin by design: Claude manages the whole cluster. Rotate by deleting
+# the token Secret (Kubernetes recreates nothing; re-apply this file) and
+# rebuilding /opt/mgmt/kubeconfig on the mgmt VM.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: claude-mcp
+  namespace: kube-system
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: claude-mcp-token
+  namespace: kube-system
+  annotations:
+    kubernetes.io/service-account.name: claude-mcp
+type: kubernetes.io/service-account-token
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: claude-mcp-cluster-admin
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+  - kind: ServiceAccount
+    name: claude-mcp
+    namespace: kube-system
