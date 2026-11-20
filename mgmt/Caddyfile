@@ -1,0 +1,39 @@
+{
+	# No ACME on a private VLAN: issue from Caddy's internal CA, serve the IP without SNI.
+	local_certs
+	skip_install_trust
+	default_sni 10.10.200.10
+	auto_https disable_redirects
+	admin off
+}
+
+https://10.10.200.10, https://mgmt.lab.local {
+	tls internal
+
+	# route{} keeps directives in written order. Without it Caddy sorts handle_path
+	# ahead of respond, and the auth check below would be skipped for /proxmox/*.
+	route {
+		# Unauthenticated liveness only - reveals nothing.
+		respond /healthz "ok" 200
+
+		@noauth not header Authorization "Bearer {$MCP_TOKEN}"
+		respond @noauth "unauthorized" 401
+
+		handle_path /proxmox/* {
+			reverse_proxy proxmox-mcp:8000 {
+				# Streamable HTTP / SSE: never buffer.
+				flush_interval -1
+				transport http {
+					read_timeout 0
+				}
+			}
+		}
+
+		respond "not found" 404
+	}
+
+	log {
+		output stdout
+		format json
+	}
+}

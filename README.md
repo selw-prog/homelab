@@ -48,8 +48,9 @@ Personal homelab running Proxmox VE with a single-node k3s cluster that hosts my
 | VMID | Name | vCPU | RAM | Disk | Network |
 |---|---|---|---|---|---|
 | 100 | `k3s` | 2 | 6 GB (no balloon) | 200 GB thin, discard on | `vmbr1` tag 110 |
+| 110 | `mgmt` | 2 | 2 GB | 32 GB thin, discard on | `vmbr0` (VLAN 200), 10.10.200.10 |
 
-QEMU guest agent is enabled on VM 100. Restart it with PVE `reboot` (not shutdown + start) — `proxmox-mcp` runs inside this VM.
+QEMU guest agent is enabled on both VMs. MCP servers run on `mgmt` (see [`mgmt/`](mgmt/README.md)), so restarting VM 100 no longer cuts off management access.
 
 ---
 
@@ -72,11 +73,9 @@ disable:
 | mysql-backup | CronJob | `mysql:8.0` + `rclone/rclone:1` | Nightly 03:15 CT `mysqldump --all-databases` → `gdrive:WebsiteBackups/mysql`, 14-day retention |
 | home-assistant | StatefulSet + PVC | `ghcr.io/home-assistant/home-assistant:stable` | NodePort 30003 |
 
-### MCP (`mcp` namespace)
+### MCP
 
-| Component | Image | NodePort | Notes |
-|---|---|---|---|
-| proxmox-mcp | `supercorp/supergateway` + `proxmox-mcp-server` | 30081 | PVE API token `claude@pve!mcp`; write access enabled. hEX restricts 30081 to the admin workstation. |
+Moved out of k3s on 2026-11-20. proxmox-mcp now runs on the `mgmt` VM behind Caddy with TLS and a bearer token: see [`mgmt/README.md`](mgmt/README.md).
 
 ### Secrets
 
@@ -88,7 +87,6 @@ Secrets are never committed (`secret*.yaml` is gitignored). Required, applied ma
 | web | `mysql-secret` | `MYSQL_ROOT_PASSWORD`, `MYSQL_USER`, `MYSQL_PASSWORD`, `MYSQL_DATABASE` |
 | web | `cloudflared-secret` | tunnel token |
 | web | `ghcr-pull-secret` | dockerconfigjson for GHCR |
-| mcp | `proxmox-mcp-creds` | `PROXMOX_HOST`, `PROXMOX_USER`, `PROXMOX_TOKEN_NAME`, `PROXMOX_TOKEN_VALUE` |
 
 Backups use the node's rclone config at `/home/sean/.config/rclone` (hostPath).
 

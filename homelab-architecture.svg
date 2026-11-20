@@ -81,7 +81,7 @@
   <text x="425" y="543" fill="#e6edf3" font-size="11" text-anchor="middle">Home Assistant</text>
 
   <rect x="505" y="520" width="140" height="40" rx="5" fill="#0d1117" stroke="#c9d1d9" stroke-width="1"/>
-  <text x="575" y="543" fill="#e6edf3" font-size="11" text-anchor="middle">proxmox-mcp (:30081)</text>
+  <text x="575" y="543" fill="#e6edf3" font-size="11" text-anchor="middle">mysql-backup (CronJob)</text>
 
   <!-- PVC / storage -->
   <rect x="355" y="568" width="290" height="32" rx="5" fill="#0d1117" stroke="#d29922" stroke-width="1"/>
